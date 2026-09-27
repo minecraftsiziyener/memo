@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>memosiziyer — Sunucu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-dusk:#1b2440;
+    --sky-night:#0f141c;
+    --grass:#5a8f3b;
+    --grass-dark:#3f6b29;
+    --dirt:#7a5233;
+    --dirt-dark:#5c3d26;
+    --stone:#8b8680;
+    --stone-light:#c9c4ba;
+    --amber:#f0a336;
+    --amber-dark:#c97d1f;
+    --ink:#0f141c;
+    --parchment:#eae6da;
+    --muted:#a7b0ba;
+    --line: rgba(234,230,218,0.12);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--sky-night);
+    color:var(--parchment);
+    font-family:'Inter',system-ui,sans-serif;
+    line-height:1.55;
+  }
+  h1,h2,h3,.pixel{
+    font-family:'Silkscreen',monospace;
+    letter-spacing:0.5px;
+  }
+  a{color:var(--amber);}
+  .wrap{
+    max-width:880px;
+    margin:0 auto;
+    padding:0 24px;
+  }
+  /* ---------- Nav ---------- */
+  header.nav{
+    position:sticky; top:0; z-index:20;
+    background:rgba(15,20,28,0.92);
+    backdrop-filter: blur(6px);
+    border-bottom:2px solid var(--dirt-dark);
+  }
+  .nav-inner{
+    max-width:880px; margin:0 auto; padding:14px 24px;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-block{
+    width:26px;height:26px;
+    background:linear-gradient(135deg,var(--grass) 0 50%, var(--dirt) 50% 100%);
+    border:2px solid var(--ink);
+    flex:none;
+  }
+  .brand-name{font-size:15px;}
+  .badge{
+    font-family:'Space Mono',monospace;
+    font-size:11px;
+    background:var(--amber);
+    color:var(--ink);
+    padding:3px 8px;
+    border:2px solid var(--amber-dark);
+  }
+  nav.links{display:flex;gap:18px;font-size:14px;}
+  nav.links a{color:var(--muted);text-decoration:none;}
+  nav.links a:hover{color:var(--parchment);}
+
+  /* ---------- Hero ---------- */
+  .hero{
+    position:relative;
+    overflow:hidden;
+    background:linear-gradient(180deg,var(--sky-night) 0%, var(--sky-dusk) 60%, #2c3a5e 100%);
+    padding-bottom:0;
+  }
+  .stars span{
+    position:absolute; width:3px; height:3px; background:var(--parchment); opacity:.7;
+  }
+  .cloud{
+    position:absolute; background:#3a4a72; opacity:.55; height:16px;
+    animation: drift 70s linear infinite;
+  }
+  @keyframes drift{ from{transform:translateX(-140px);} to{transform:translateX(calc(100vw + 140px));} }
+  @media (prefers-reduced-motion: reduce){ .cloud{animation:none;} }
+
+  .hero-content{
+    position:relative; z-index:2;
+    max-width:880px; margin:0 auto; padding:64px 24px 40px;
+  }
+  .hero h1{
+    font-size:clamp(34px,6vw,56px);
+    color:var(--amber);
+    margin:0 0 6px;
+    text-shadow:3px 3px 0 var(--ink);
+  }
+  .hero .sub{
+    color:var(--parchment); font-size:16px; margin:0 0 20px; max-width:60ch;
+  }
+  .status-pill{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'Space Mono',monospace; font-size:13px;
+    background:rgba(0,0,0,0.35); border:1px solid var(--line);
+    padding:6px 12px; margin-bottom:26px;
+  }
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--stone);flex:none;}
+  .dot.on{background:#6bcf63; box-shadow:0 0 8px #6bcf63;}
+  .dot.off{background:#d9534f;}
+  .dot.checking{background:var(--amber); animation:pulse 1.2s ease-in-out infinite;}
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
+
+  .cta-row{display:flex; flex-wrap:wrap; gap:12px;}
+  .btn{
+    font-family:'Silkscreen',monospace;
+    font-size:14px;
+    padding:13px 20px;
+    border:2px solid var(--ink);
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-flex; align-items:center; gap:8px;
+    box-shadow:3px 3px 0 var(--ink);
+    transition:transform .08s ease;
+  }
+  .btn:active{transform:translate(2px,2px); box-shadow:1px 1px 0 var(--ink);}
+  .btn-primary{background:var(--amber); color:var(--ink);}
+  .btn-primary:hover{background:#ffb750;}
+  .btn-ghost{background:transparent; color:var(--parchment); border-color:var(--stone);}
+  .btn-ghost:hover{border-color:var(--parchment);}
+
+  /* blocky landscape footer of hero */
+  .landscape{position:relative; height:90px;}
+  .grass-row{position:absolute; inset:0 0 auto 0; height:26px; background:linear-gradient(180deg,#6aa441,#4c7a2f);}
+  .dirt-row{position:absolute; top:26px; left:0; right:0; bottom:0; background:linear-gradient(180deg,#8a5c39,#6b4429);}
+  .seam{position:absolute; left:0; right:0; height:2px; background:rgba(0,0,0,0.25);}
+
+  /* ---------- Sections ---------- */
+  section{padding:56px 0;}
+  section h2{
+    font-size:22px; color:var(--parchment); margin:0 0 6px;
+  }
+  .eyebrow{
+    font-family:'Space Mono',monospace; font-size:12px; color:var(--muted); margin:0 0 4px;
+  }
+  .lead{color:var(--muted); margin:0 0 28px; max-width:62ch;}
+
+  .divider{
+    height:14px;
+    background-image:
+      linear-gradient(90deg, var(--grass-dark) 0 50%, transparent 0),
+      linear-gradient(180deg, var(--grass) 0 6px, var(--dirt) 6px 14px);
+    background-size:28px 14px, 100% 100%;
+  }
+
+  /* connect cards */
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:640px){ .grid-2{grid-template-columns:1fr;} }
+  .card{
+    background:#171e2c;
+    border:2px solid var(--ink);
+    box-shadow:4px 4px 0 rgba(0,0,0,0.35);
+    padding:20px;
+  }
+  .card h3{font-size:15px; margin:0 0 4px; color:var(--amber);}
+  .card .desc{font-size:13px; color:var(--muted); margin:0 0 14px;}
+  .addr-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--ink); border:1px solid var(--line);
+    padding:10px 12px; margin-bottom:8px;
+  }
+  .addr-row code{font-family:'Space Mono',monospace; font-size:13px; color:var(--parchment); word-break:break-all;}
+  .copy-btn{
+    font-family:'Space Mono',monospace; font-size:12px;
+    background:var(--stone); color:var(--ink);
+    border:none; padding:6px 10px; cursor:pointer; flex:none;
+  }
+  .copy-btn:hover{background:var(--stone-light);}
+  .copy-btn.copied{background:#6bcf63;}
+
+  /* plan info */
+  .plan-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+  @media (max-width:640px){ .plan-grid{grid-template-columns:1fr;} }
+  .plan-item{
+    border-left:4px solid var(--amber);
+    background:#171e2c;
+    padding:14px 16px;
+  }
+  .plan-item .k{font-family:'Space Mono',monospace; font-size:12px; color:var(--muted);}
+  .plan-item .v{font-size:15px; margin-top:2px;}
+
+  /* start steps */
+  .steps{display:flex; flex-direction:column; gap:14px;}
+  .step{
+    display:grid; grid-template-columns:auto 1fr; gap:14px;
+    background:#171e2c; border:2px solid var(--ink); padding:16px 18px;
+  }
+  .step .who{
+    font-family:'Silkscreen',monospace; font-size:11px; color:var(--ink);
+    background:var(--grass); padding:4px 8px; height:fit-content; white-space:nowrap;
+  }
+  .step p{margin:6px 0 0; color:var(--muted); font-size:14px;}
+  .step .cmd{
+    margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  }
+  .cmd code{
+    font-family:'Space Mono',monospace; background:var(--ink); border:1px solid var(--line);
+    padding:8px 10px; font-size:13px; color:var(--amber);
+  }
+
+  /* console / live panel */
+  .terminal{
+    background:#0b0e13; border:2px solid var(--ink);
+    box-shadow:4px 4px 0 rgba(0,0,0,0.35);
+    font-family:'Space Mono',monospace; font-size:13px;
+    overflow:hidden;
+  }
+  .terminal-bar{
+    background:#171e2c; padding:8px 12px; display:flex; align-items:center; gap:8px;
+    border-bottom:1px solid var(--line);
+  }
+  .terminal-bar span{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .term-red{background:#d9534f;} .term-amber{background:var(--amber);} .term-green{background:#6bcf63;}
+  .terminal-title{margin-left:8px; color:var(--muted); font-size:12px;}
+  .terminal-body{padding:16px; min-height:140px; color:#c9d1d9; white-space:pre-wrap;}
+  .terminal-body .ok{color:#6bcf63;}
+  .terminal-body .warn{color:var(--amber);}
+  .terminal-body .err{color:#ff6b6b;}
+  .terminal-body .muted{color:var(--muted);}
+
+  footer{
+    padding:40px 0 60px;
+    border-top:2px solid var(--dirt-dark);
+    color:var(--muted); font-size:13px;
+  }
+  footer a{color:var(--parchment);}
+  .rules{margin:0 0 16px; padding-left:18px;}
+  .rules li{margin-bottom:6px;}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <div class="brand">
+      <span class="brand-block"></span>
+      <span class="brand-name pixel">memosiziyer</span>
+      <span class="badge">Kulübe</span>
+    </div>
+    <nav class="links">
+      <a href="#baglan">Bağlan</a>
+      <a href="#baslat">Başlat</a>
+      <a href="#durum">Durum</a>
+      <a href="#kurallar">Kurallar</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="stars" id="stars"></div>
+  <div class="cloud" style="width:120px; top:60px; left:10%; animation-delay:-10s;"></div>
+  <div class="cloud" style="width:90px; top:100px; left:55%; animation-delay:-40s;"></div>
+
+  <div class="hero-content">
+    <p class="eyebrow">Arkadaş grubu sunucusu</p>
+    <h1>memosiziyer</h1>
+    <p class="sub">Minefort üzerinde çalışan, kendi arkadaş çevremize ait Minecraft sunucumuz. Bağlan, sunucuyu uyandır, kim online bak — hepsi burada.</p>
+
+    <div class="status-pill" id="statusPill">
+      <span class="dot checking" id="statusDot"></span>
+      <span id="statusText">Durum kontrol ediliyor…</span>
+    </div>
+
+    <div class="cta-row">
+      <a class="btn btn-primary" href="#baslat">Sunucuyu Uyandır</a>
+      <a class="btn btn-ghost" href="#baglan">Bağlantı bilgileri</a>
+    </div>
+  </div>
+
+  <div class="landscape">
+    <div class="grass-row"></div>
+    <div class="dirt-row"></div>
+    <div class="seam" style="top:26px;"></div>
+  </div>
+</section>
+
+<div class="wrap">
+
+  <section id="baglan">
+    <p class="eyebrow">01 · Bağlantı</p>
+    <h2>Sunucuya nasıl bağlanılır</h2>
+    <p class="lead">Adresi Minecraft istemcine ekle. Java ve Bedrock için ayrı port kullanılıyor, ikisi de aynı adres üzerinden çalışıyor.</p>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Java Sürümü</h3>
+        <p class="desc">Multiplayer → Sunucu Ekle</p>
+        <div class="addr-row">
+          <code id="javaAddr">memosiziyer.minefort.com:25565</code>
+          <button class="copy-btn" data-copy="memosiziyer.minefort.com:25565">Kopyala</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Bedrock Sürümü</h3>
+        <p class="desc">Sunucular → Sunucu Ekle</p>
+        <div class="addr-row">
+          <code id="bedrockAddr">memosiziyer.minefort.com:19132</code>
+          <button class="copy-btn" data-copy="memosiziyer.minefort.com:19132">Kopyala</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section>
+    <p class="eyebrow">02 · Paket</p>
+    <h2>Kulübe paketiyle çalışıyoruz</h2>
+    <p class="lead">Minefort'un ücretsiz katmanı. Küçük bir arkadaş grubu için yeterli, ama birkaç sınırı bilmekte fayda var.</p>
+    <div class="plan-grid">
+      <div class="plan-item">
+        <div class="k">PAKET</div>
+        <div class="v">Kulübe (ücretsiz)</div>
+      </div>
+      <div class="plan-item">
+        <div class="k">HAZIRDA BEKLEME</div>
+        <div class="v">Kimse yokken sunucu uykuya dalar</div>
+      </div>
+      <div class="plan-item">
+        <div class="k">UYANMA SÜRESİ</div>
+        <div class="v">Genelde bir dakikadan az</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section id="baslat">
+    <p class="eyebrow">03 · Başlat</p>
+    <h2>Sunucuyu başlat</h2>
+    <p class="lead">Kulübe paketinde sunucu boşta kalınca uykuya dalıyor. Uyandırmanın iki yolu var — kimin yapacağına göre birini seç.</p>
+
+    <div class="steps">
+      <div class="step">
+        <span class="who">Herkes</span>
+        <div>
+          <strong>Minefort lobisinden uyandır</strong>
+          <p>Minecraft'ı aç, sunucu adresine <code style="font-family:'Space Mono',monospace;background:var(--ink);padding:2px 6px;">play.minefort.com</code> yazarak Minefort lobisine katıl, sonra aşağıdaki komutu sohbete yaz:</p>
+          <div class="cmd">
+            <code>/startup memosiziyer</code>
+            <button class="copy-btn" data-copy="/startup memosiziyer">Kopyala</button>
+          </div>
+          <p style="margin-top:10px;">Bu resmi bir Minefort özelliği, bot ya da otomasyon değil — sunucu sahibi panelden bunu açık bıraktığı sürece herkes kullanabilir.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="who">Sunucu sahibi</span>
+        <div>
+          <strong>Minefort panelinden başlat</strong>
+          <p>Panelde oturum aç, "Sunucularım" sayfasından memosiziyer'i bul ve Başlat'a bas. Ayrıca "Startup Command" ayarını Appearance sekmesinden açık tutman, yukarıdaki komutun herkes için çalışmasını sağlar.</p>
+          <div class="cmd">
+            <a class="btn btn-ghost" href="https://minefort.com/servers" target="_blank" rel="noopener">Minefort panelini aç</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section id="durum">
+    <p class="eyebrow">04 · Canlı durum</p>
+    <h2>Şu an sunucuda ne var</h2>
+    <p class="lead">Bu panel Minefort'tan değil, herkese açık mcsrvstat.us servisinden gerçek zamanlı veri çekiyor.</p>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <span class="term-red"></span><span class="term-amber"></span><span class="term-green"></span>
+        <span class="terminal-title">durum · memosiziyer.minefort.com</span>
+      </div>
+      <div class="terminal-body" id="terminalBody">Sorgulanıyor…</div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section id="kurallar">
+    <p class="eyebrow">05 · Kurallar</p>
+    <h2>Kısa kurallar</h2>
+    <ul class="rules">
+      <li>Başkasının inşasını izinsiz yıkma.</li>
+      <li>Griefing ve item çalma yasak.</li>
+      <li>Sunucuyu boşta uzun süre açık bırakma — Kulübe paketinin kotası sınırlı.</li>
+      <li>Sorun olursa sunucu sahibine yaz.</li>
+    </ul>
+  </section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <p>memosiziyer · arkadaş grubu sunucusu · Minefort üzerinde barındırılıyor.</p>
+    <p><a href="#">Discord linkini buraya ekle →</a></p>
+  </div>
+</footer>
+
+<script>
+  // scattered background stars
+  (function(){
+    const container = document.getElementById('stars');
+    const positions = [[6,10],[14,22],[22,8],[30,26],[5,34],[86,9],[92,20],[78,18],[96,30],[52,7],[63,15],[70,32],[40,18],[45,30]];
+    positions.forEach(([x,y])=>{
+      const s = document.createElement('span');
+      s.style.left = x + '%';
+      s.style.top = y + '%';
+      container.appendChild(s);
+    });
+  })();
+
+  // copy buttons
+  document.querySelectorAll('.copy-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const text = btn.getAttribute('data-copy');
+      try{
+        await navigator.clipboard.writeText(text);
+        const original = btn.textContent;
+        btn.textContent = 'Kopyalandı';
+        btn.classList.add('copied');
+        setTimeout(()=>{ btn.textContent = original; btn.classList.remove('copied'); }, 1500);
+      }catch(e){
+        btn.textContent = 'Elle kopyala';
+      }
+    });
+  });
+
+  // live status via mcsrvstat.us (public, free API)
+  const JAVA_ADDR = 'memosiziyer.minefort.com:25565';
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  const term = document.getElementById('terminalBody');
+
+  function setPill(state, label){
+    dot.className = 'dot ' + state;
+    text.textContent = label;
+  }
+
+  async function loadStatus(){
+    try{
+      const res = await fetch('https://api.mcsrvstat.us/3/' + JAVA_ADDR, { cache: 'no-store' });
+      const data = await res.json();
+
+      if(data && data.online){
+        const playerCount = (data.players && typeof data.players.online === 'number') ? data.players.online : 0;
+        const maxPlayers = (data.players && data.players.max) ? data.players.max : '?';
+        const version = data.version || 'bilinmiyor';
+        const motd = (data.motd && data.motd.clean && data.motd.clean[0]) ? data.motd.clean[0] : '—';
+
+        setPill('on', 'Çevrimiçi · ' + playerCount + ' oyuncu');
+
+        let lines = [];
+        lines.push('<span class="ok">[ONLINE]</span> ' + JAVA_ADDR);
+        lines.push('sürüm     : ' + version);
+        lines.push('oyuncular : ' + playerCount + ' / ' + maxPlayers);
+        lines.push('motd      : ' + motd);
+        if(data.players && Array.isArray(data.players.list) && data.players.list.length){
+          lines.push('şu an     : ' + data.players.list.join(', '));
+        }
+        term.innerHTML = lines.join('\n');
+      } else {
+        setPill('off', 'Uykuda / kapalı');
+        term.innerHTML = '<span class="warn">[HAZIRDA BEKLEME]</span> Sunucu şu an uykuda görünüyor.\n' +
+                          '<span class="muted">Uyandırmak için yukarıdaki "Sunucuyu Uyandır" adımlarını izle.</span>';
+      }
+    }catch(err){
+      setPill('off', 'Durum alınamadı');
+      term.innerHTML = '<span class="err">[HATA]</span> Durum servisine ulaşılamadı. Az sonra tekrar dene.';
+    }
+  }
+
+  loadStatus();
+  setInterval(loadStatus, 60000);
+</script>
+
+</body>
+</html>
